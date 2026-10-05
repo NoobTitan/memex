@@ -168,3 +168,15 @@ Two approaches — pick the right one based on string length:
 - **Multi-line text** (long descriptions, agent prompts, onboarding copy): defined directly in `AppLocalizationsExt` (`lib/l10n/app_localizations_ext.dart`) as Dart code — better readability than JSON for multi-line content.
 
 Access all strings via `UserStorage.l10n` (static, initialized in `main()`).
+
+## Cursor Cloud specific instructions
+
+Cloud Agents boot with the toolchain already installed. Do not download a second Flutter SDK.
+
+- Flutter **3.41.9** (Dart 3.11.5) is on `PATH` via `/opt/flutter`. It is the newest stable release whose `flutter_test` pins match `pubspec.lock`. The `.metadata` revision is older (3.38.5) and downgrades the lockfile. Newer stable releases, including 3.47, rewrite `pubspec.lock` and `analysis_options.yaml` on `flutter pub get`.
+- Android SDK: `/opt/android-sdk` (platform 36, build-tools 36.0.0, NDK `27.0.12077973`, CMake 3.22.1). JDK 17 is selected with `flutter config --jdk-dir`. Login shells also export `JAVA_HOME`, `ANDROID_HOME`, and `ANDROID_SDK_ROOT` from `/etc/profile.d/memex-dev.sh`. `flutter` and `dart` resolve without those variables because `flutter config` stores the SDK and JDK paths.
+- `libsqlite3` is installed so Drift tests can load `libsqlite3.so`. `rg` is on `PATH` for file-search tests.
+- Install dependencies with `flutter pub get`. On this SDK the command is idempotent and does not modify the lockfile.
+- Checks used in CI: `flutter analyze --no-pub --no-fatal-infos --no-fatal-warnings` and `flutter test --no-pub`. `dart_test.yaml` forces `concurrency: 1`. Tests tagged `live` skip unless `OPENAI_BASE_URL`/`OPENAI_API_KEY` or `MIMO_BASE_URL`/`MIMO_API_KEY` are set.
+- Debug package: `flutter build apk --flavor globalDev --debug`.
+- An AVD named `memex` (Android 34, Google APIs, x86_64) is installed. Nested KVM faults in Cloud Agent VMs (`kernel BUG` in `vmx_vcpu_create`), so hardware acceleration cannot boot the emulator. Software emulation (`emulator -accel off -no-window`) can install and start the app, then the UI thread hits an ANR. Prefer `flutter test` for behavior checks. iOS builds are not available on this Linux image.
